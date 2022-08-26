@@ -1,0 +1,10 @@
+﻿@model RoleFormViewModel
+
+<form asp-action="Add" class="mb-3">
+    <div class="input-group">
+        <input asp-for="Name" class="form-control" placeholder="Role name"
+               aria-label="Role name">
+        <button class="btn btn-outline-secondary">Add</button>
+    </div>
+    <span class="text-danger" asp-validation-for="Name"></span>
+</form>
