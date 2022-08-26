@@ -81,17 +81,9 @@ namespace IdentityPractise.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var username = "";
-                try
-                {
-                    username  = new EmailAddressAttribute().IsValid(Input.Email)
-                        ? (await _userManager.FindByEmailAsync(Input.Email)).UserName
+                username = new EmailAddressAttribute().IsValid(Input.Email)
+                        ? new MailAddress(Input.Email).User
                         : Input.Email;
-                }
-                catch (Exception e)
-                {
-                    ModelState.AddModelError("", "Duplicate user");
-                    return Page();
-                }
 
                 var result = await _signInManager.PasswordSignInAsync(username, Input.Password, Input.RememberMe,
                     lockoutOnFailure: false);
