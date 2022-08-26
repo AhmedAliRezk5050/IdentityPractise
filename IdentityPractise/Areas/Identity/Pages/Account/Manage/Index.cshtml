@@ -1,0 +1,68 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Profile";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h3>@ViewData["Title"]</h3>
+<partial name="_StatusMessage" for="StatusMessage"/>
+<div class="row">
+    <div class="col-md-6">
+        <form id="profile-form" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-4 mt-4 text-center">
+                @if (Model.Input.ProfilePicture != null)
+                {
+                    <img src="@Model.Input.ProfilePicture" alt="profile" class="profile-picture" id="target">
+                }
+                else
+                {
+                    <img src="~/images/profile-picture-placeholder.png" alt="profile" class="profile-picture" id="target">
+                }
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label"></label>
+                <input asp-for="Input.FirstName" class="form-control"/>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label"></label>
+                <input asp-for="Input.LastName" class="form-control"/>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <input asp-for="Username" class="form-control" disabled/>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                <input asp-for="Input.PhoneNumber" class="form-control"/>
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Profile Picture</label>
+                <input type="file" name="profile-picture" accept="image/*" id="select_image" onchange="putImage()">
+            </div>
+            <button id="update-profile-button" type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+    
+    <script>
+   function showImage(src, target) {
+       const fr = new FileReader();
+       fr.onload = function(){
+           target.src = fr.result;
+       }
+       fr.readAsDataURL(src.files[0]);
+   }
+   
+   function putImage() {
+       const src = document.getElementById("select_image");
+       const target = document.getElementById("target");
+       showImage(src, target);
+   }
+    </script>
+}
