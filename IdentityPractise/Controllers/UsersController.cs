@@ -168,7 +168,7 @@ public class UsersController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<List<RoleViewModel>?> FetchViewModelRoles()
+    private async Task<List<RoleViewModel>> FetchViewModelRoles()
     {
         var viewModelRoles = await _roleManager.Roles
             .Select(r => new RoleViewModel()
