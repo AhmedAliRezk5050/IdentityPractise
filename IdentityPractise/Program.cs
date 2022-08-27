@@ -22,7 +22,12 @@ namespace IdentityPractise
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultUI()
                 .AddDefaultTokenProviders();
-            
+            // prevent creating user with already taken email
+            // builder.Services.Configure<IdentityOptions>(options =>
+            // {
+            //     options.User.RequireUniqueEmail = true;
+            // });
+
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();

@@ -11,13 +11,20 @@ namespace IdentityPractise.Controllers;
 public class UsersController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
-
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IUserStore<ApplicationUser> _userStore;
+    private readonly IUserEmailStore<ApplicationUser> _emailStore;
 
-    public UsersController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    public UsersController(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        IUserStore<ApplicationUser> userStore
+    )
     {
         _userManager = userManager;
         _roleManager = roleManager;
+        _userStore = userStore;
+        _emailStore = GetEmailStore();
     }
 
     public async Task<IActionResult> Index()
@@ -35,6 +42,72 @@ public class UsersController : Controller
         );
 
         return View(users);
+    }
+
+    public async Task<IActionResult> Add()
+    {
+        return View(new AddUserViewModel()
+        {
+            Roles = await FetchViewModelRoles()
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Add(AddUserViewModel model)
+    {
+        if (!model.Roles.Any(r => r.Selected))
+        {
+            ModelState.AddModelError("Roles", "Add at least one role");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            // extra step to add already taken email error to model errors
+            if (await _userManager.FindByEmailAsync(model.Email) != null)
+            {
+                ModelState.AddModelError("Email", "Email already exists");
+                return View(model);
+            }
+
+            var user = CreateUser();
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            await _userStore.SetUserNameAsync(user, model.UserName, CancellationToken.None);
+            await _emailStore.SetEmailAsync(user, model.Email, CancellationToken.None);
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRolesAsync(user, model.Roles?
+                    .Where(r => r.Selected).Select(r => r.Name));
+                return RedirectToAction(nameof(Index));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                if (error.Code == "DuplicateUserName")
+                {
+                    ModelState.AddModelError("UserName", "User name already exists");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            return View(model);
+        }
+        catch (Exception e)
+        {
+            ModelState.AddModelError("", "Failed to add user. Try again later");
+            return View(model);
+        }
     }
 
     public async Task<IActionResult> ManageRoles(string id)
@@ -85,13 +158,49 @@ public class UsersController : Controller
             {
                 await _userManager.RemoveFromRoleAsync(user, role.Name);
             }
-            
+
             if (!userRoles.Any(r => r == role.Name) && role.Selected)
             {
                 await _userManager.AddToRoleAsync(user, role.Name);
             }
         }
-        
+
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<List<RoleViewModel>?> FetchViewModelRoles()
+    {
+        var viewModelRoles = await _roleManager.Roles
+            .Select(r => new RoleViewModel()
+            {
+                Id = r.Id,
+                Name = r.Name
+            }).ToListAsync();
+
+        return viewModelRoles;
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                                                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " +
+                                                $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!_userManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+
+        return (IUserEmailStore<ApplicationUser>)_userStore;
     }
 }
