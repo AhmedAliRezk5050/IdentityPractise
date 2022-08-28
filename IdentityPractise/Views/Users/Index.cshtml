@@ -34,35 +34,52 @@
                     <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-warning">Edit</a>
                     
                     @{
-                        var url = $"/users/delete/{user.Id}";
+                        //var url = $"/users/delete/{user.Id}";
                     }
                     
-                    <a  class="btn btn-danger" onclick="deleteUser(this, '@url')">Delete</a>
+                    <button class="btn btn-danger delete-btn" data-id="@user.Id">Delete</button>
                 </td>
             </tr>
         }
-    }
+    } 
     </tbody>
 </table>
 
 @section Scripts
 {
     <script type="text/javascript">
-        function deleteUser(el, url) {
-            if (confirm("Are you sure you want to delete this user?")) {
-                $(el).closest('tr').remove();
-                $.ajax({
-                       url,
-                        type: "DELETE",
-                         success: function(data) {
-                           if (data.success) { 
-                                console.log(data.message);
-                           } else {
-                               alert(data.message)
-                           } 
-                       } 
-                });                                                                                                
-           }
-        }      
+        $('.delete-btn').click(function() {
+            const btn = $(this);
+            bootbox.confirm({
+                title: "Delete User?",
+                message: "Do you want to delete this user? This cannot be undone.",
+                buttons: {
+                    cancel: {
+                        label: '<i class="fa fa-times"></i> Cancel'
+                    },
+                    confirm: {
+                        label: '<i class="fa fa-check"></i> Confirm'
+                    }
+                },      
+                callback: function (result) {
+                    if(result) {
+                         const userId = btn.data('id');
+                         const deleteUrl = `/api/users/${userId}`;
+                         $.ajax({
+                            url: deleteUrl,
+                            type: "DELETE",
+                            success: function (data) {
+                                btn.closest('tr').remove();
+                                alert("User Deleted successfuly");
+                            },
+                            error: function() {
+                                alert("Failed to delete the user");
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
     </script>
 }
