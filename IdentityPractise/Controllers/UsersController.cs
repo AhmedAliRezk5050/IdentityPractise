@@ -110,6 +110,61 @@ public class UsersController : Controller
         }
     }
 
+    public async Task<IActionResult> Edit(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+
+        return View(new EditUserViewModel()
+        {
+            Id = id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            UserName = user.UserName,
+            Email = user.Email
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(EditUserViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _userManager.FindByIdAsync(model.Id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.FirstName = model.FirstName;
+        user.LastName = model.LastName;
+        user.Email = model.Email;
+        user.UserName = model.UserName;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError("", error.Description);
+            }
+
+            return View(model);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
     public async Task<IActionResult> ManageRoles(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
@@ -202,5 +257,19 @@ public class UsersController : Controller
         }
 
         return (IUserEmailStore<ApplicationUser>)_userStore;
+    }
+    
+    [HttpDelete]
+    public async Task<ActionResult> Delete(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+
+        var result = await _userManager.DeleteAsync(user);
+
+        if (result.Succeeded) return Json(new { result = "success", userName = user.UserName });
+        
+        var errors = result.Errors.Select(error => error.Description).ToList();
+
+        return StatusCode(500, new { result = "failure", errors });
     }
 }

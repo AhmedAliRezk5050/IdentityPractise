@@ -1,10 +1,11 @@
-﻿@model IEnumerable<UserViewModel>?
+﻿@using Microsoft.CodeAnalysis.Scripting
+@model IEnumerable<UserViewModel>?
 
 @{
     ViewData["Title"] = "Users";
 }
 
-<h1 class="text-center mb-5">Users</h1> 
+<h1 class="text-center mb-5">Users</h1>
 <a asp-action="Add" class="btn btn-primary mb-3">Add User</a>
 <table class="table table-striped table-bordered">
     <thead>
@@ -28,9 +29,40 @@
                 <td>@user.UserName</td>
                 <td>@user.Email</td>
                 <td>@string.Join(" , ", user.Roles)</td>
-                <td><a asp-action="ManageRoles" asp-route-id="@user.Id" class="btn btn-secondary">Manage User</a></td>
+                <td class="d-flex gap-2 flex-wrap">
+                    <a asp-action="ManageRoles" asp-route-id="@user.Id" class="btn btn-secondary">Manage Roles</a>
+                    <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-warning">Edit</a>
+                    
+                    @{
+                        var url = $"/users/delete/{user.Id}";
+                    }
+                    
+                    <a  class="btn btn-danger" onclick="deleteUser(this, '@url')">Delete</a>
+                </td>
             </tr>
         }
     }
     </tbody>
 </table>
+
+@section Scripts
+{
+    <script type="text/javascript">
+        function deleteUser(el, url) {
+            if (confirm("Are you sure you want to delete this user?")) {
+                $(el).closest('tr').remove();
+                $.ajax({
+                       url,
+                        type: "DELETE",
+                         success: function(data) {
+                           if (data.success) { 
+                                console.log(data.message);
+                           } else {
+                               alert(data.message)
+                           } 
+                       } 
+                });                                                                                                
+           }
+        }      
+    </script>
+}
