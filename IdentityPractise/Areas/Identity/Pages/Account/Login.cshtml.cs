@@ -104,8 +104,28 @@ namespace IdentityPractise.Areas.Identity.Pages.Account
                     _logger.LogWarning("User account locked out.");
                     return RedirectToPage("./Lockout");
                 }
+
+                var signInMethod = new SignInMethod();
+
+                if (new EmailAddressAttribute().IsValid(Input.Email))
+                {
+                    signInMethod.Email = Input.Email;
+                }
                 else
                 {
+                    signInMethod.UserName = Input.Email;
+                }
+
+                var user = await FetchUser(signInMethod);
+
+                if (user != null && !await IsEmailConfirmed(user))
+                {
+                    ModelState.AddModelError(string.Empty, "Please confirm your email before you login");
+                    return Page();
+                }
+                else
+                {
+
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                     return Page();
                 }
@@ -114,5 +134,28 @@ namespace IdentityPractise.Areas.Identity.Pages.Account
             // If we got this far, something failed, redisplay form
             return Page();
         }
+
+        private async Task<bool> IsEmailConfirmed(ApplicationUser user) => await _userManager.IsEmailConfirmedAsync(user);
+
+        private async Task<ApplicationUser> FetchUser(SignInMethod signInMethod) {
+            ApplicationUser applicationUser;
+
+            if (signInMethod.Email != null)
+            {
+                applicationUser = await _userManager.FindByEmailAsync(signInMethod.Email);
+            } else
+            {
+                applicationUser = await _userManager.FindByNameAsync(signInMethod.UserName);
+            }
+
+            return applicationUser;
+        }
+
+    }
+
+    class SignInMethod
+    {
+        public string Email { get; set; }
+        public string UserName { get; set; }
     }
 }
